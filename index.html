@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ぽてぽて整理整頓</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+    body {
+      background: linear-gradient(160deg, #1a3a0a 0%, #2d5016 50%, #1a2f0a 100%);
+      min-height: 100vh;
+      font-family: 'Hiragino Maru Gothic Pro', 'BIZ UDPGothic', sans-serif;
+      color: #E8F5E9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+      padding-bottom: 48px;
+    }
+
+    body::before {
+      content: '🌲🌿🌲🍃🌲🌿🌲🍃🌲🌿🌲';
+      position: fixed;
+      bottom: 0; left: 0; width: 100%;
+      font-size: 2rem; letter-spacing: 4px;
+      opacity: 0.18; pointer-events: none;
+      text-align: center; z-index: 0;
+    }
+
+    /* ===== HEADER ===== */
+    #title {
+      font-size: 1.6rem; font-weight: bold;
+      color: #A5D6A7;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      padding: 20px 0 4px;
+      letter-spacing: 2px; text-align: center;
+      position: relative; z-index: 2;
+    }
+    #subtitle {
+      font-size: 0.82rem; color: #81C784;
+      margin-bottom: 16px; opacity: 0.85;
+      position: relative; z-index: 2;
+    }
+
+    /* ===== SCREEN BASE ===== */
+    .screen {
+      width: min(420px, 96vw);
+      position: relative; z-index: 2;
+    }
+
+    /* ===== SELECT SCREEN ===== */
+    #select-screen {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 12px;
+    }
+
+    .stage-btn {
+      width: 100%;
+      background: rgba(0,0,0,0.40);
+      border: 1px solid rgba(165,214,167,0.35);
+      border-radius: 16px;
+      padding: 16px 18px;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 14px;
+      color: #E8F5E9;
+      font-family: inherit;
+      transition: background 0.2s, border-color 0.2s, transform 0.1s;
+      text-align: left;
+    }
+    .stage-btn:hover { background: rgba(0,0,0,0.55); border-color: rgba(165,214,167,0.65); }
+    .stage-btn:active { transform: scale(0.98); }
+    .stage-btn.cleared { border-color: #66BB6A; }
+
+    .stage-icon { font-size: 2rem; width: 44px; flex-shrink: 0; text-align: center; }
+    .stage-info { flex: 1; }
+    .stage-name { font-size: 1rem; font-weight: bold; color: #A5D6A7; }
+    .stage-label { font-size: 0.78rem; color: #81C784; margin-top: 2px; }
+    .stage-clear-badge {
+      font-size: 0.68rem; color: #66BB6A;
+      background: rgba(102,187,106,0.12);
+      border: 1px solid rgba(102,187,106,0.35);
+      border-radius: 8px; padding: 4px 8px;
+      text-align: center; line-height: 1.5;
+      flex-shrink: 0;
+    }
+
+    /* ===== GAME SCREEN ===== */
+    #game-screen { display: none; flex-direction: column; align-items: center; gap: 10px; }
+
+    #hud {
+      width: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(165,214,167,0.28);
+      border-radius: 14px;
+      backdrop-filter: blur(4px);
+    }
+    .hud-item { text-align: center; }
+    .hud-label { font-size: 0.66rem; color: #81C784; letter-spacing: 1px; }
+    .hud-value { font-size: 1.25rem; font-weight: bold; color: #E8F5E9; min-width: 48px; }
+
+    #back-btn {
+      background: rgba(165,214,167,0.12);
+      border: 1px solid rgba(165,214,167,0.35);
+      border-radius: 10px;
+      color: #A5D6A7; font-size: 0.78rem;
+      padding: 5px 10px; cursor: pointer;
+      font-family: inherit;
+    }
+    #back-btn:active { background: rgba(165,214,167,0.25); }
+
+    #hint-text {
+      font-size: 0.76rem; color: #81C784;
+      opacity: 0.8; text-align: center; font-style: italic;
+    }
+
+    /* ===== BOARD ===== */
+    #board-wrap {
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(165,214,167,0.22);
+      border-radius: 16px;
+      padding: 10px;
+      cursor: grab;
+    }
+    #board {
+      display: grid;
+      gap: 2px;
+    }
+
+    .cell {
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* tile styles */
+    .cell-wall {
+      background: #243d12;
+      border: 1px solid #182808;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.45);
+    }
+    .cell-wall::after {
+      content: '🌿';
+      font-size: 0.7em;
+      opacity: 0.35;
+    }
+    .cell-floor {
+      background: rgba(120,80,40,0.30);
+      border: 1px solid rgba(120,80,40,0.18);
+    }
+    .cell-goal {
+      background: rgba(120,80,40,0.30);
+      border: 1px solid rgba(165,214,167,0.45);
+      box-shadow: inset 0 0 8px rgba(165,214,167,0.12);
+    }
+    .cell-box {
+      background: rgba(120,80,40,0.30);
+      border: 1px solid rgba(120,80,40,0.18);
+    }
+    .cell-box-on-goal {
+      background: rgba(120,80,40,0.30);
+      border: 1px solid #66BB6A;
+      box-shadow: inset 0 0 12px rgba(102,187,106,0.28), 0 0 8px rgba(102,187,106,0.25);
+    }
+    .cell-player { background: rgba(120,80,40,0.30); border: 1px solid rgba(120,80,40,0.18); }
+    .cell-player-goal { background: rgba(120,80,40,0.30); border: 1px solid rgba(165,214,167,0.45); }
+
+    .box-emoji {
+      font-size: 1em;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+      line-height: 1;
+    }
+    .goal-emoji {
+      font-size: 1em;
+      opacity: 0.28;
+      line-height: 1;
+    }
+    .cell-box-on-goal .box-emoji {
+      filter: drop-shadow(0 0 5px rgba(102,187,106,0.9));
+    }
+
+    .player-img {
+      width: 82%; height: 82%;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    .player-img.bounce {
+      animation: playerBounce 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes playerBounce {
+      from { transform: scale(0.8); }
+      to   { transform: scale(1); }
+    }
+
+    /* ===== CONTROLS ===== */
+    #controls {
+      display: flex; gap: 10px; width: 100%;
+      align-items: center; justify-content: space-between;
+    }
+
+    .ctrl-btns {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .ctrl-btn {
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(165,214,167,0.28);
+      border-radius: 12px;
+      color: #A5D6A7; font-size: 0.78rem;
+      padding: 8px 14px; cursor: pointer;
+      font-family: inherit;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .ctrl-btn:active { background: rgba(165,214,167,0.15); }
+    .ctrl-icon { font-size: 1rem; }
+
+    /* D-pad */
+    #dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 50px);
+      grid-template-rows: repeat(3, 50px);
+      gap: 4px;
+    }
+    .dpad-btn {
+      background: rgba(0,0,0,0.40);
+      border: 1px solid rgba(165,214,167,0.28);
+      border-radius: 10px;
+      color: #A5D6A7; font-size: 1.2rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .dpad-btn:active { background: rgba(165,214,167,0.20); }
+    .dpad-center {
+      background: rgba(0,0,0,0.20);
+      border: 1px solid rgba(165,214,167,0.12);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; color: rgba(165,214,167,0.35);
+    }
+    .dpad-empty { pointer-events: none; }
+
+    /* ===== CLEAR OVERLAY ===== */
+    #clear-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.72);
+      z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    #clear-overlay.show { display: flex; }
+
+    #clear-modal {
+      background: linear-gradient(160deg, #1a3a0a, #2d5016);
+      border: 2px solid #66BB6A;
+      border-radius: 24px;
+      padding: 32px 26px;
+      text-align: center;
+      width: min(340px, 90vw);
+      box-shadow: 0 0 40px rgba(102,187,106,0.35);
+      animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes modalIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    #clear-chara {
+      width: 80px; height: 80px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      margin: 0 auto 8px;
+      animation: clearBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes clearBounce {
+      from { transform: scale(0) rotate(-15deg); }
+      to   { transform: scale(1) rotate(0); }
+    }
+    #clear-title { font-size: 1.6rem; color: #A5D6A7; font-weight: bold; margin: 4px 0 8px; }
+    #clear-stats { font-size: 0.88rem; color: #81C784; margin-bottom: 20px; line-height: 1.8; }
+
+    .modal-btn {
+      display: block; width: 100%;
+      border-radius: 12px;
+      color: #E8F5E9; font-size: 0.95rem;
+      padding: 12px; cursor: pointer;
+      font-family: inherit; margin-top: 8px;
+      background: rgba(102,187,106,0.15);
+      border: 1px solid rgba(102,187,106,0.4);
+    }
+    .modal-btn:hover { background: rgba(102,187,106,0.28); }
+    .modal-btn.primary {
+      background: #2E7D32;
+      border-color: #66BB6A;
+      font-weight: bold; font-size: 1rem;
+    }
+    .modal-btn.primary:hover { background: #388E3C; }
+
+    /* ===== LEAF ANIMATION ===== */
+    .leaf-anim {
+      position: fixed;
+      pointer-events: none;
+      z-index: 99;
+      font-size: 1.4rem;
+      animation: leafFall linear forwards;
+    }
+    @keyframes leafFall {
+      0%   { opacity: 1;   transform: translateY(-30px) rotate(0deg) translateX(0); }
+      100% { opacity: 0;   transform: translateY(105vh) rotate(540deg) translateX(30px); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="title">ぽてぽて整理整頓</div>
+<div id="subtitle">🌰 食材を整理しよう！</div>
+
+<!-- ===== SELECT SCREEN ===== -->
+<div id="select-screen" class="screen"></div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="game-screen" class="screen">
+  <div id="hud">
+    <button id="back-btn" onclick="showSelect()">← もどる</button>
+    <div class="hud-item">
+      <div class="hud-label">てかず</div>
+      <div class="hud-value" id="hud-moves">0</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">タイム</div>
+      <div class="hud-value" id="hud-time">0:00</div>
+    </div>
+  </div>
+
+  <div id="hint-text"></div>
+
+  <div id="board-wrap">
+    <div id="board"></div>
+  </div>
+
+  <div id="controls">
+    <div class="ctrl-btns">
+      <button class="ctrl-btn" onclick="undoMove()">
+        <span class="ctrl-icon">↩</span>もどす
+      </button>
+      <button class="ctrl-btn" onclick="resetLevel()">
+        <span class="ctrl-icon">🔄</span>リセット
+      </button>
+    </div>
+
+    <div id="dpad">
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" onclick="move(0,-1)">▲</button>
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" onclick="move(-1,0)">◀</button>
+      <div class="dpad-center">🌰</div>
+      <button class="dpad-btn" onclick="move(1,0)">▶</button>
+      <div class="dpad-empty"></div>
+      <button class="dpad-btn" onclick="move(0,1)">▼</button>
+      <div class="dpad-empty"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CLEAR OVERLAY ===== -->
+<div id="clear-overlay">
+  <div id="clear-modal">
+    <img id="clear-chara" src="images/chara_happy.png" alt="ぽてぽて">
+    <div id="clear-title">整理完了！✨</div>
+    <div id="clear-stats"></div>
+    <button class="modal-btn primary" id="next-btn">つぎのステージ →</button>
+    <button class="modal-btn" onclick="resetLevel(); hideClear()">もう一度</button>
+    <button class="modal-btn" onclick="showSelect()">ステージ選択</button>
+  </div>
+</div>
+
+<script>
+// ===== LEVEL DATA =====
+// Map chars: # wall, (space) floor, . goal, $ box, * box-on-goal, @ player, + player-on-goal
+const BOX_EMOJI  = '🌰';
+const LEAF_SET   = ['🍃','🌿','🍀','🌱','🍂'];
+
+const LEVELS = [
+  {
+    name: 'ステージ 1', label: '入門', stars: '⭐', icon: '🌱',
+    hint: 'ふたつのきのみを運ぼう！',
+    map: [
+      '#####',
+      '#  .#',
+      '# $@#',
+      '#.$ #',
+      '#####',
+    ]
+  },
+  {
+    name: 'ステージ 2', label: '初級', stars: '⭐⭐', icon: '🌿',
+    hint: 'どこを通ればゴールに届く？',
+    map: [
+      '########',
+      '###  ###',
+      '### $###',
+      '#     ##',
+      '# # # ##',
+      '#    @.#',
+      '########',
+    ]
+  },
+  {
+    name: 'ステージ 3', label: '中級', stars: '⭐⭐⭐', icon: '🍃',
+    hint: 'ふたつのエリアをつなごう！',
+    map: [
+      '  ######',
+      '  #@.  #',
+      '  # $  #',
+      '##### ##',
+      '#      #',
+      '#      #',
+      '### ####',
+      ' #  $  #',
+      ' #  .  #',
+      ' ######',
+    ]
+  },
+  {
+    name: 'ステージ 4', label: '上級', stars: '⭐⭐⭐⭐', icon: '🍂',
+    hint: 'どこから動かす？よく考えて！',
+    map: [
+      '#########',
+      '#       #',
+      '# ##$## #',
+      '# @   $ #',
+      '##$...# #',
+      '##    # #',
+      '####  ###',
+      '#########',
+    ]
+  },
+  {
+    name: 'ステージ 5', label: '難関', stars: '⭐⭐⭐⭐⭐', icon: '🌰',
+    hint: 'みっつ！どこから動かす？',
+    map: [
+      '###########',
+      '####...####',
+      '####   ####',
+      '####   ####',
+      '##### #####',
+      '#     #  ##',
+      '# #$ $ $ ##',
+      '#   ###  ##',
+      '### #@# ###',
+      '###     ###',
+      '###########',
+    ]
+  },
+];
+
+// ===== TILE CONSTANTS =====
+const WALL          = '#';
+const FLOOR         = ' ';
+const GOAL          = '.';
+const BOX           = '$';
+const BOX_ON_GOAL   = '*';
+const PLAYER        = '@';
+const PLAYER_ON_GOAL = '+';
+
+// ===== GAME STATE =====
+let currentLevelIdx = 0;
+let mapState = [];
+let playerPos = { x: 0, y: 0 };
+let moves = 0;
+let seconds = 0;
+let timerInterval = null;
+let history = [];
+
+let cleared   = new Array(LEVELS.length).fill(false);
+let bestMoves = new Array(LEVELS.length).fill(null);
+let bestTimes = new Array(LEVELS.length).fill(null);
+
+// ===== MAP UTILS =====
+function parseMap(arr) { return arr.map(row => row.split('')); }
+function cloneMap(m)   { return m.map(r => [...r]); }
+
+function findPlayer(m) {
+  for (let r = 0; r < m.length; r++)
+    for (let c = 0; c < m[r].length; c++)
+      if (m[r][c] === PLAYER || m[r][c] === PLAYER_ON_GOAL)
+        return { x: c, y: r };
+}
+
+// ===== INIT LEVEL =====
+function initLevel(idx) {
+  currentLevelIdx = idx;
+  const lv = LEVELS[idx];
+  mapState  = parseMap(lv.map);
+  playerPos = findPlayer(mapState);
+  moves     = 0;
+  seconds   = 0;
+  history   = [];
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => { seconds++; updateHUD(); }, 1000);
+  document.getElementById('hint-text').textContent = lv.hint;
+  updateHUD();
+  render();
+}
+
+function resetLevel() { initLevel(currentLevelIdx); }
+
+// ===== HUD =====
+function formatTime(s) {
+  if (s === null) return '--:--';
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+function updateHUD() {
+  document.getElementById('hud-moves').textContent = moves;
+  document.getElementById('hud-time').textContent  = formatTime(seconds);
+}
+
+// ===== MOVE =====
+function move(dx, dy) {
+  if (document.getElementById('clear-overlay').classList.contains('show')) return;
+
+  const nx = playerPos.x + dx;
+  const ny = playerPos.y + dy;
+  if (ny < 0 || ny >= mapState.length || nx < 0 || nx >= mapState[ny].length) return;
+
+  const target = mapState[ny][nx];
+  if (target === WALL) return;
+
+  // Save history snapshot BEFORE modifying state
+  history.push({ map: cloneMap(mapState), pos: { ...playerPos } });
+
+  if (target === FLOOR || target === GOAL) {
+    applyPlayerMove(nx, ny);
+    moves++;
+  } else if (target === BOX || target === BOX_ON_GOAL) {
+    const bx = nx + dx, by = ny + dy;
+    if (by < 0 || by >= mapState.length || bx < 0 || bx >= mapState[by].length) { history.pop(); return; }
+    const beyond = mapState[by][bx];
+    if (beyond === WALL || beyond === BOX || beyond === BOX_ON_GOAL) { history.pop(); return; }
+    // Move box
+    mapState[by][bx] = (beyond === GOAL) ? BOX_ON_GOAL : BOX;
+    mapState[ny][nx] = (target === BOX_ON_GOAL) ? GOAL : FLOOR;
+    applyPlayerMove(nx, ny);
+    moves++;
+  } else {
+    history.pop(); return;
+  }
+
+  updateHUD();
+  render();
+  checkClear();
+}
+
+function applyPlayerMove(nx, ny) {
+  const cur  = mapState[playerPos.y][playerPos.x];
+  mapState[playerPos.y][playerPos.x] = (cur === PLAYER_ON_GOAL) ? GOAL : FLOOR;
+  const dest = mapState[ny][nx];
+  mapState[ny][nx] = (dest === GOAL) ? PLAYER_ON_GOAL : PLAYER;
+  playerPos = { x: nx, y: ny };
+}
+
+// ===== UNDO =====
+function undoMove() {
+  if (history.length === 0) return;
+  const prev = history.pop();
+  mapState  = prev.map;
+  playerPos = prev.pos;
+  moves = Math.max(0, moves - 1);
+  updateHUD();
+  render();
+}
+
+// ===== CHECK CLEAR =====
+function checkClear() {
+  for (let r = 0; r < mapState.length; r++)
+    for (let c = 0; c < mapState[r].length; c++)
+      if (mapState[r][c] === BOX) return; // unplaced box exists
+
+  clearInterval(timerInterval);
+  cleared[currentLevelIdx] = true;
+  if (!bestMoves[currentLevelIdx] || moves   < bestMoves[currentLevelIdx]) bestMoves[currentLevelIdx] = moves;
+  if (!bestTimes[currentLevelIdx] || seconds < bestTimes[currentLevelIdx]) bestTimes[currentLevelIdx] = seconds;
+
+  spawnLeaves();
+  setTimeout(() => {
+    document.getElementById('clear-stats').innerHTML =
+      `てかず: <strong>${moves}</strong>&nbsp;&nbsp;タイム: <strong>${formatTime(seconds)}</strong>`;
+
+    const nextBtn = document.getElementById('next-btn');
+    if (currentLevelIdx < LEVELS.length - 1) {
+      nextBtn.textContent = 'つぎのステージ →';
+      nextBtn.onclick = () => { hideClear(); startLevel(currentLevelIdx + 1); };
+    } else {
+      nextBtn.textContent = '🎉 全ステージクリア！';
+      nextBtn.onclick = () => showSelect();
+    }
+    document.getElementById('clear-overlay').classList.add('show');
+  }, 700);
+
+  updateSelectScreen();
+}
+
+function hideClear() {
+  document.getElementById('clear-overlay').classList.remove('show');
+}
+
+// ===== LEAF ANIMATION =====
+function spawnLeaves() {
+  for (let i = 0; i < 22; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'leaf-anim';
+      el.textContent = LEAF_SET[Math.floor(Math.random() * LEAF_SET.length)];
+      el.style.left = (Math.random() * 100) + 'vw';
+      el.style.top  = '-30px';
+      el.style.animationDuration  = (1.4 + Math.random() * 1) + 's';
+      el.style.animationDelay     = (Math.random() * 0.3) + 's';
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    }, i * 55);
+  }
+}
+
+// ===== RENDER =====
+function render() {
+  const board = document.getElementById('board');
+  const rows  = mapState.length;
+  const cols  = mapState[0].length;
+
+  const maxW    = Math.min(420, window.innerWidth * 0.93) - 20 - 4;
+  const tileSize = Math.floor(Math.min(maxW / cols, 54));
+  const fontSize = Math.floor(tileSize * 0.58);
+
+  board.style.gridTemplateColumns = `repeat(${cols}, ${tileSize}px)`;
+  board.style.gridTemplateRows    = `repeat(${rows}, ${tileSize}px)`;
+  board.innerHTML = '';
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const ch   = mapState[r][c];
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.style.cssText = `width:${tileSize}px;height:${tileSize}px;font-size:${fontSize}px;`;
+
+      switch (ch) {
+        case WALL: {
+          cell.classList.add('cell-wall');
+          break;
+        }
+        case FLOOR: {
+          cell.classList.add('cell-floor');
+          break;
+        }
+        case GOAL: {
+          cell.classList.add('cell-goal');
+          const g = document.createElement('span');
+          g.className = 'goal-emoji';
+          g.textContent = BOX_EMOJI;
+          cell.appendChild(g);
+          break;
+        }
+        case BOX: {
+          cell.classList.add('cell-box');
+          const b = document.createElement('span');
+          b.className = 'box-emoji';
+          b.textContent = BOX_EMOJI;
+          cell.appendChild(b);
+          break;
+        }
+        case BOX_ON_GOAL: {
+          cell.classList.add('cell-box-on-goal');
+          const b = document.createElement('span');
+          b.className = 'box-emoji';
+          b.textContent = BOX_EMOJI;
+          cell.appendChild(b);
+          break;
+        }
+        case PLAYER:
+        case PLAYER_ON_GOAL: {
+          cell.classList.add(ch === PLAYER_ON_GOAL ? 'cell-player-goal' : 'cell-player');
+          const img = document.createElement('img');
+          img.src       = 'images/potepote.png';
+          img.className = 'player-img bounce';
+          img.alt       = 'ぽてぽて';
+          cell.appendChild(img);
+          break;
+        }
+      }
+
+      board.appendChild(cell);
+    }
+  }
+}
+
+// ===== SCREEN NAVIGATION =====
+function showSelect() {
+  clearInterval(timerInterval);
+  hideClear();
+  document.getElementById('select-screen').style.display = '';
+  document.getElementById('game-screen').style.display   = 'none';
+  updateSelectScreen();
+}
+
+function startLevel(idx) {
+  document.getElementById('select-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display   = 'flex';
+  initLevel(idx);
+}
+
+function updateSelectScreen() {
+  const container = document.getElementById('select-screen');
+  container.innerHTML = '';
+  LEVELS.forEach((lv, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'stage-btn' + (cleared[idx] ? ' cleared' : '');
+    const badge = cleared[idx]
+      ? `<div class="stage-clear-badge">✓ クリア<br>${bestMoves[idx]}手<br>${formatTime(bestTimes[idx])}</div>`
+      : '';
+    btn.innerHTML = `
+      <div class="stage-icon">${lv.icon}</div>
+      <div class="stage-info">
+        <div class="stage-name">${lv.name} ${lv.stars}</div>
+        <div class="stage-label">${lv.label}</div>
+      </div>
+      ${badge}
+    `;
+    btn.onclick = () => startLevel(idx);
+    container.appendChild(btn);
+  });
+}
+
+// ===== KEYBOARD INPUT =====
+document.addEventListener('keydown', e => {
+  if (document.getElementById('game-screen').style.display === 'none') return;
+  switch (e.key) {
+    case 'ArrowUp':    case 'w': case 'W': move(0,-1);  e.preventDefault(); break;
+    case 'ArrowDown':  case 's': case 'S': move(0, 1);  e.preventDefault(); break;
+    case 'ArrowLeft':  case 'a': case 'A': move(-1, 0); e.preventDefault(); break;
+    case 'ArrowRight': case 'd': case 'D': move(1,  0); e.preventDefault(); break;
+    case 'z': case 'Z': if (e.ctrlKey || e.metaKey) { undoMove(); e.preventDefault(); } break;
+    case 'r': case 'R': resetLevel(); break;
+    case 'Escape': showSelect(); break;
+  }
+});
+
+// ===== TOUCH SWIPE =====
+let touchStart = null;
+
+document.getElementById('board-wrap').addEventListener('touchstart', e => {
+  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  e.preventDefault();
+}, { passive: false });
+
+document.getElementById('board-wrap').addEventListener('touchend', e => {
+  if (!touchStart) return;
+  const dx = e.changedTouches[0].clientX - touchStart.x;
+  const dy = e.changedTouches[0].clientY - touchStart.y;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  touchStart = null;
+  if (Math.max(adx, ady) < 18) return;
+  if (adx > ady) move(dx > 0 ? 1 : -1, 0);
+  else           move(0, dy > 0 ? 1 : -1);
+  e.preventDefault();
+}, { passive: false });
+
+// ===== START =====
+showSelect();
+</script>
+</body>
+</html>
