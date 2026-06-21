@@ -632,7 +632,8 @@ function render() {
   const cols  = mapState[0].length;
 
   const maxW    = Math.min(420, window.innerWidth * 0.93) - 20 - 4;
-  const tileSize = Math.floor(Math.min(maxW / cols, 54));
+  const maxH    = window.innerHeight * 0.45;
+  const tileSize = Math.floor(Math.min(maxW / cols, maxH / rows, 54));
   const fontSize = Math.floor(tileSize * 0.58);
 
   board.style.gridTemplateColumns = `repeat(${cols}, ${tileSize}px)`;
