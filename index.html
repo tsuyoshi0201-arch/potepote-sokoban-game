@@ -9,16 +9,15 @@
 
     body {
       background: linear-gradient(160deg, #1a3a0a 0%, #2d5016 50%, #1a2f0a 100%);
-      min-height: 100vh;
-      min-height: 100dvh;
-      padding-bottom: env(safe-area-inset-bottom, 80px);
+      height: 100vh;
+      height: 100dvh;
       font-family: 'Hiragino Maru Gothic Pro', 'BIZ UDPGothic', sans-serif;
       color: #E8F5E9;
       display: flex;
       flex-direction: column;
       align-items: center;
-      overflow-x: hidden;
-      padding-bottom: 48px;
+      overflow: hidden;
+      padding-bottom: max(env(safe-area-inset-bottom), 8px);
     }
 
     body::before {
@@ -634,7 +633,7 @@ function render() {
   const cols  = mapState[0].length;
 
   const maxW    = Math.min(420, window.innerWidth * 0.93) - 20 - 4;
-  const maxH    = window.innerHeight * 0.45;
+  const maxH    = (window.innerHeight || window.screen.height) * 0.38;
   const tileSize = Math.floor(Math.min(maxW / cols, maxH / rows, 54));
   const fontSize = Math.floor(tileSize * 0.58);
 
